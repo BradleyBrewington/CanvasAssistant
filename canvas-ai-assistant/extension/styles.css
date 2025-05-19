@@ -1,0 +1,454 @@
+/* styles.css - Styling for Canvas AI Assistant */
+
+/* Main container styling */
+.ai-assistant-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 350px;
+    max-width: 90vw;
+    background: #ffffff;
+    border: 1px solid #c7cdd1;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    color: #2d3b45;
+}
+
+/* Header styling */
+.ai-assistant-header {
+    background: linear-gradient(135deg, #394b59 0%, #2d3b45 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ai-assistant-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-assistant-icon {
+    font-size: 18px;
+}
+
+.ai-assistant-title h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.ai-assistant-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.ai-control-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.ai-control-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.ai-control-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Content area styling */
+.ai-assistant-content {
+    padding: 16px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Status panel */
+.ai-status-panel {
+    background: #f5f5f5;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+}
+
+.status-item {
+    text-align: center;
+}
+
+.status-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.status-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3b45;
+}
+
+/* Section styling */
+.ai-section {
+    margin-bottom: 20px;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ai-section-title {
+    background: #f8f9fb;
+    color: #2d3b45;
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.ai-content-area {
+    padding: 12px;
+    background: white;
+}
+
+/* Assignment items */
+.assignment-item {
+    background: #ffffff;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+}
+
+.assignment-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.assignment-item.urgent {
+    border-left: 4px solid #d32f2f;
+    background: #fff5f5;
+}
+
+.assignment-item.warning {
+    border-left: 4px solid #f57c00;
+    background: #fffbf5;
+}
+
+.assignment-item.normal {
+    border-left: 4px solid #2e7d32;
+    background: #f5fff5;
+}
+
+.assignment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.assignment-name {
+    font-weight: 600;
+    color: #2d3b45;
+    flex-grow: 1;
+}
+
+.assignment-type {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.assignment-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.assignment-course {
+    font-weight: 500;
+    color: #1976d2;
+}
+
+.assignment-due {
+    color: #d32f2f;
+}
+
+.assignment-points {
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.assignment-urgency {
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.urgent .assignment-urgency {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.warning .assignment-urgency {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.normal .assignment-urgency {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Detected deadline items */
+.detected-deadline-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.deadline-match {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 6px;
+}
+
+.deadline-type {
+    background: #6f42c1;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 8px;
+}
+
+.deadline-context {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+/* Announcement items */
+.announcement-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.announcement-title {
+    font-weight: 600;
+    color: #495057;
+}
+
+.announcement-course {
+    background: #17a2b8;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.announcement-meta {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.announcement-preview {
+    font-size: 13px;
+    color: #495057;
+    line-height: 1.4;
+}
+
+/* Action buttons */
+.ai-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e1e5e9;
+}
+
+.ai-action-button {
+    flex: 1;
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.ai-action-button:hover:not(:disabled) {
+    background: #1565c0;
+}
+
+.ai-action-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Message styles */
+.loading-message, .no-data-message, .error-message {
+    text-align: center;
+    padding: 16px;
+    color: #666;
+    font-style: italic;
+}
+
+.error-message {
+    background: #fff5f5;
+    color: #d32f2f;
+    border-radius: 6px;
+    border: 1px solid #ffcdd2;
+}
+
+.error-message button {
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.error-message button:hover {
+    background: #c62828;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .ai-assistant-container {
+        position: static;
+        width: 100%;
+        margin: 10px;
+        max-width: calc(100% - 20px);
+    }
+    
+    .ai-status-panel {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .ai-actions {
+        flex-direction: column;
+    }
+}
+
+/* Dark mode support for Canvas */
+@media (prefers-color-scheme: dark) {
+    .ai-assistant-container {
+        background: #2d3b45;
+        border-color: #394b59;
+        color: #ffffff;
+    }
+    
+    .ai-assistant-content {
+        background: #2d3b45;
+    }
+    
+    .ai-section-title {
+        background: #394b59;
+        color: #ffffff;
+    }
+    
+    .ai-content-area {
+        background: #2d3b45;
+    }
+    
+    .assignment-item {
+        background: #394b59;
+        border-color: #4a5e6d;
+        color: #ffffff;
+    }
+    
+    .assignment-item.urgent {
+        background: #4a2c2c;
+    }
+    
+    .assignment-item.warning {
+        background: #4a3d2c;
+    }
+    
+    .assignment-item.normal {
+        background: #2c4a2f;
+    }
+}
+
+/* Animation for smooth transitions */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.ai-assistant-container {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Custom scrollbar for content area */
+.ai-assistant-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ai-assistant-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.ai-assistant-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.ai-assistant-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas AI Assistant</title>
+    <link rel="stylesheet" href="popup-styles.css">
+</head>
+<body>
+    <div class="popup-container">
+        <div class="popup-header">
+            <div class="popup-title">
+                <span class="popup-icon">🤖</span>
+                <h2>Canvas AI Assistant</h2>
+            </div>
+            <div class="popup-version">v1.0.0</div>
+        </div>
+        
+        <div class="popup-content">
+            <div class="status-section">
+                <h3>Status</h3>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-label">Canvas Detected:</span>
+                        <span id="canvas-status" class="status-indicator">Checking...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Assistant Active:</span>
+                        <span id="assistant-status" class="status-indicator">Checking...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="quick-actions">
+                <h3>Quick Actions</h3>
+                <button id="refresh-data" class="action-button">
+                    <span class="button-icon">🔄</span>
+                    Refresh Data
+                </button>
+                <button id="toggle-assistant" class="action-button">
+                    <span class="button-icon">👁️</span>
+                    Toggle Assistant
+                </button>
+                <button id="export-data" class="action-button">
+                    <span class="button-icon">💾</span>
+                    Export Data
+                </button>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Settings</h3>
+                <div class="setting-item">
+                    <label for="auto-refresh">
+                        <input type="checkbox" id="auto-refresh" checked>
+                        Auto-refresh on navigation
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label for="show-notifications">
+                        <input type="checkbox" id="show-notifications" checked>
+                        Show deadline notifications
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label for="dark-mode">
+                        <input type="checkbox" id="dark-mode">
+                        Dark mode
+                    </label>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-item">
+                    <span class="info-label">Last Updated:</span>
+                    <span id="last-updated">Never</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Data Points:</span>
+                    <span id="data-points">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="popup-footer">
+            <a href="#" id="help-link">Help & Documentation</a>
+            <a href="#" id="feedback-link">Send Feedback</a>
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

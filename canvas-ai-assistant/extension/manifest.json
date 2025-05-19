@@ -1,0 +1,45 @@
+{
+    "manifest_version": 3,
+    "name": "Canvas AI Assistant",
+    "version": "1.0.0",
+    "description": "An AI-powered assistant that helps students manage Canvas assignments and deadlines by extracting information from courses, syllabi, and announcements.",
+    
+    "permissions": [
+        "storage",
+        "tabs",
+        "activeTab",
+        "alarms",
+        "notifications"
+    ],
+    
+    "host_permissions": [
+        "https://*.instructure.com/*",
+        "https://*.canvaslms.com/*",
+        "https://canvas.tamu.edu/*"
+    ],
+    
+    "content_scripts": [{
+        "matches": [
+            "https://*.instructure.com/*",
+            "https://*.canvaslms.com/*",
+            "https://canvas.tamu.edu/*"
+        ],
+        "js": ["content-script.js"],
+        "css": ["styles.css"],
+        "run_at": "document_end"
+    }],
+    
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Canvas AI Assistant - Manage your assignments intelligently"
+    },
+    
+    "background": {
+        "service_worker": "background.js"
+    },
+    
+    "web_accessible_resources": [{
+        "resources": ["icons/*"],
+        "matches": ["https://*.instructure.com/*", "https://*.canvaslms.com/*", "https://canvas.tamu.edu/*"]
+    }]
+}
