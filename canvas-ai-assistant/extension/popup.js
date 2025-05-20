@@ -215,29 +215,37 @@ class AssistantPopup {
    }
    
    async toggleAssistant() {
-       const button = document.getElementById('toggle-assistant');
-       const originalText = button.innerHTML;
-       
-       try {
-           button.innerHTML = '<span class="button-icon">⏳</span>Toggling...';
-           button.disabled = true;
-           
-           const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-           await chrome.tabs.sendMessage(tab.id, { action: 'toggle-visibility' });
-           
-           // Update status after toggle
-           setTimeout(() => {
-               this.checkAssistantStatus();
-           }, 500);
-           
-       } catch (error) {
-           console.error('Error toggling assistant:', error);
-           alert('Could not toggle assistant. Make sure you\'re on a Canvas page.');
-       } finally {
-           button.innerHTML = originalText;
-           button.disabled = false;
-       }
-   }
+    const button = document.getElementById('toggle-assistant');
+    const originalText = button.innerHTML;
+    
+    try {
+        button.innerHTML = '<span class="button-icon">⏳</span>Toggling...';
+        button.disabled = true;
+        
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'toggle-visibility' });
+        
+        // Update status after toggle
+        setTimeout(() => {
+            this.checkAssistantStatus();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error toggling assistant:', error);
+        
+        // If communication fails, the content script might not be running
+        // Try to trigger a reload of the extension in the tab
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            await chrome.tabs.sendMessage(tab.id, { action: 'reinitialize' });
+        } catch (reloadError) {
+            alert('Could not toggle assistant. The page may need to be refreshed.');
+        }
+    } finally {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
    
    async exportData() {
        const button = document.getElementById('export-data');
@@ -322,3 +330,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 document.addEventListener('DOMContentLoaded', () => {
    new AssistantPopup();
 });
+

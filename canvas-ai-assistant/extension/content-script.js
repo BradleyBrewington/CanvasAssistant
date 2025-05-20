@@ -47,7 +47,6 @@ function setupBulletproofMessageHandling() {
     console.log('✅ Enhanced message handling active');
 }
 
-// Enhanced message handler with submission status awareness
 function handleMessage(message, sender, sendResponse) {
     console.log('📨 Enhanced message received:', message.action);
     
@@ -97,10 +96,23 @@ function handleMessage(message, sender, sendResponse) {
                 response.data = organizeAssignmentsByActualStatus(window.canvasAssistantState.assignments);
                 break;
                 
-            case 'toggle-interface':
-                toggleInterface();
+            case 'toggle-visibility':
+                console.log('👁️ Toggle visibility message received from popup');
+                const isVisible = toggleInterface();
                 response.success = true;
-                response.data = { message: 'Interface toggled' };
+                response.data = { 
+                    message: isVisible ? 'Interface shown' : 'Interface hidden',
+                    visible: isVisible
+                };
+                break;
+                
+            case 'reinitialize':
+                console.log('🔄 Reinitialize requested');
+                response.success = true;
+                response.data = { message: 'Reinitialization started' };
+                setTimeout(() => {
+                    performEnhancedComprehensiveExtraction();
+                }, 100);
                 break;
                 
             default:
@@ -583,7 +595,7 @@ function createImprovedAssignmentInterface() {
         // Create improved interface with better positioning
         const container = document.createElement('div');
         container.id = 'canvas-ai-assistant';
-        container.className = 'ai-assistant-enhanced-v2';
+        container.className = 'ai-assistant-enhanced-v2 canvas-ai-assistant-container';
         
         // Make it draggable and properly positioned
         container.style.cssText = `
@@ -614,6 +626,9 @@ function createImprovedAssignmentInterface() {
         
         // Make interface draggable
         makeInterfaceDraggable(container);
+
+        // ADD THIS LINE - directly set up minimize button functionality
+        setupMinimizeAndCloseButtons();
         
         console.log('✅ Improved interface created successfully');
         
@@ -1275,45 +1290,57 @@ function makeInterfaceDraggable(container) {
 }
 
 function setupImprovedEventListeners() {
+    // Initialize state tracking for minimize/maximize
+    if (!window.canvasAssistantState.interfaceSettings) {
+        window.canvasAssistantState.interfaceSettings = {};
+    }
+    // Set initial state
+    window.canvasAssistantState.interfaceSettings.isMinimized = false;
+    
     // Minimize button
     const minimizeBtn = document.getElementById('ai-minimize-btn');
-    const contentArea = document.querySelector('.ai-content-scrollable');
     
-    if (minimizeBtn && contentArea) {
+    if (minimizeBtn) {
         minimizeBtn.addEventListener('click', () => {
-            const isMinimized = contentArea.style.display === 'none';
+            console.log('Minimize button clicked');
+            
+            // Get elements with null checking
+            const contentArea = document.querySelector('.ai-content-scrollable');
+            const footerArea = document.querySelector('.ai-assistant-container > div:last-child');
+            const container = document.getElementById('canvas-ai-assistant');
+            
+            // Safety check - only proceed if we found the necessary elements
+            if (!contentArea || !container) {
+                console.error('Could not find content area or container to minimize');
+                return;
+            }
+            
+            // Get state from state object
+            const isMinimized = window.canvasAssistantState.interfaceSettings.isMinimized;
+            
+            console.log('Minimize state:', isMinimized ? 'currently minimized' : 'currently expanded');
             
             if (isMinimized) {
-                // Expanding
-                contentArea.style.display = 'flex';
+                // EXPANDING
+                console.log('Expanding the interface');
+                
+                // Show the content and footer areas
+                contentArea.style.display = 'block';
+                if (footerArea) footerArea.style.display = 'block';
+                
+                // Update the button
                 minimizeBtn.textContent = '−';
                 minimizeBtn.title = 'Minimize';
                 
-                // Reset layout of tab navigation
-                const tabNav = document.querySelector('.ai-content-scrollable > div:first-child');
-                if (tabNav) {
-                    tabNav.style.display = 'flex';
-                    tabNav.style.position = 'sticky';
-                    tabNav.style.top = '0';
-                    tabNav.style.zIndex = '1';
-                }
+                // Update state
+                window.canvasAssistantState.interfaceSettings.isMinimized = false;
                 
-                // Reset layout of tab panels
-                document.querySelectorAll('.assignment-tab-content-v2').forEach(panel => {
-                    if (panel.id.includes('urgent') && panel.classList.contains('active')) {
-                        panel.style.display = 'block';
-                    }
-                });
-                
-                // Force a layout recalculation
+                // Force a layout recalculation to avoid display issues
+                container.style.opacity = '0.99';
                 setTimeout(() => {
-                    // Trigger reflow
-                    contentArea.style.display = 'none';
-                    // Force browser to recalculate layout
-                    void contentArea.offsetHeight;
-                    contentArea.style.display = 'flex';
+                    container.style.opacity = '1';
                     
-                    // Re-establish which tab is active
+                    // Make sure the active tab is displaying correctly
                     const activeTab = document.querySelector('.assignment-tab-button-v2.active');
                     if (activeTab) {
                         const tabId = activeTab.dataset.tab;
@@ -1322,12 +1349,24 @@ function setupImprovedEventListeners() {
                             tabContent.style.display = 'block';
                         }
                     }
-                }, 10);
+                }, 50);
             } else {
-                // Minimizing
+                // MINIMIZING
+                console.log('Minimizing the interface');
+                
+                // Hide the content and footer areas
                 contentArea.style.display = 'none';
+                if (footerArea) footerArea.style.display = 'none';
+                
+                // Update the button
                 minimizeBtn.textContent = '+';
                 minimizeBtn.title = 'Expand';
+                
+                // Apply any CSS changes needed for minimized state
+                container.classList.add('minimized');
+                
+                // Update state
+                window.canvasAssistantState.interfaceSettings.isMinimized = true;
             }
         });
     }
@@ -1336,6 +1375,7 @@ function setupImprovedEventListeners() {
     const closeBtn = document.getElementById('ai-close-btn');
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
+            console.log('Close button clicked');
             const container = document.getElementById('canvas-ai-assistant');
             if (container) {
                 // Hide instead of removing, so we can show it again
@@ -1343,6 +1383,11 @@ function setupImprovedEventListeners() {
                 
                 // Create a floating "restore" button that stays visible
                 createRestoreButton();
+                
+                // Store state that indicates the assistant is closed but available
+                if (window.canvasAssistantState && window.canvasAssistantState.interfaceSettings) {
+                    window.canvasAssistantState.interfaceSettings.isClosed = true;
+                }
             }
         });
     }
@@ -1366,7 +1411,8 @@ function setupImprovedEventListeners() {
                 content.style.display = 'none';
             });
             
-            const tabContent = document.getElementById(`${button.dataset.tab}-tab-v2`);
+            const tabId = button.dataset.tab;
+            const tabContent = document.getElementById(`${tabId}-tab-v2`);
             if (tabContent) {
                 tabContent.style.display = 'block';
             }
@@ -1381,10 +1427,34 @@ function setupImprovedEventListeners() {
             refreshButton.innerHTML = '⏳ Refreshing...';
             refreshButton.disabled = true;
             
-            performEnhancedComprehensiveExtraction().then(() => {
+            try {
+                performEnhancedComprehensiveExtraction().then(() => {
+                    refreshButton.innerHTML = '🔄 Refresh';
+                    refreshButton.disabled = false;
+                    
+                    // After refresh, restore the minimize state from our state object
+                    if (window.canvasAssistantState.interfaceSettings.isMinimized) {
+                        const contentArea = document.querySelector('.ai-content-scrollable');
+                        const footerArea = document.querySelector('.ai-assistant-container > div:last-child');
+                        const minimizeBtn = document.getElementById('ai-minimize-btn');
+                        const container = document.getElementById('canvas-ai-assistant');
+                        
+                        if (contentArea) contentArea.style.display = 'none';
+                        if (footerArea) footerArea.style.display = 'none';
+                        if (minimizeBtn) {
+                            minimizeBtn.textContent = '+';
+                            minimizeBtn.title = 'Expand';
+                        }
+                        if (container) {
+                            container.classList.add('minimized');
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error during refresh:', error);
                 refreshButton.innerHTML = '🔄 Refresh';
                 refreshButton.disabled = false;
-            });
+            }
         });
     }
     
@@ -1392,9 +1462,15 @@ function setupImprovedEventListeners() {
     const exportButton = document.getElementById('export-assignments-v2');
     if (exportButton) {
         exportButton.addEventListener('click', () => {
-            exportEnhancedAssignmentData();
+            try {
+                exportEnhancedAssignmentData();
+            } catch (error) {
+                console.error('Error exporting data:', error);
+            }
         });
     }
+    
+    console.log('✅ Event listeners set up successfully');
 }
 
 function createRestoreButton() {
@@ -1427,13 +1503,42 @@ function createRestoreButton() {
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         z-index: 9999;
         font-size: 20px;
+        transition: transform 0.2s ease;
     `;
+    
+    // Add hover effect
+    restoreButton.addEventListener('mouseover', () => {
+        restoreButton.style.transform = 'scale(1.1)';
+    });
+    
+    restoreButton.addEventListener('mouseout', () => {
+        restoreButton.style.transform = 'scale(1)';
+    });
     
     // Add click event to restore the assistant
     restoreButton.addEventListener('click', () => {
         const container = document.getElementById('canvas-ai-assistant');
         if (container) {
             container.style.display = 'block';
+            
+            // Make sure everything inside is properly displayed
+            const contentArea = container.querySelector('.ai-content-scrollable');
+            const footerArea = container.querySelector('.ai-assistant-container > div:last-child');
+            
+            if (contentArea && contentArea.style.display === 'none') {
+                // If it was minimized when closed, expand it
+                contentArea.style.display = 'flex';
+                if (footerArea) footerArea.style.display = 'block';
+                
+                const minimizeBtn = document.getElementById('ai-minimize-btn');
+                if (minimizeBtn) minimizeBtn.textContent = '−';
+            }
+            
+            // Reset state
+            if (window.canvasAssistantState.interfaceSettings) {
+                window.canvasAssistantState.interfaceSettings.isClosed = false;
+            }
+            
             restoreButton.remove();
         } else {
             // If assistant can't be found, refresh data
@@ -1496,15 +1601,212 @@ function exportEnhancedAssignmentData() {
    }
 }
 
-// NEW: Toggle interface visibility (for external control)
 function toggleInterface() {
-   const container = document.getElementById('canvas-ai-assistant');
-   if (container) {
-       const isHidden = container.style.display === 'none';
-       container.style.display = isHidden ? 'block' : 'none';
-       return !isHidden;
-   }
-   return false;
+    console.log('🔄 Toggle interface function called');
+    
+    // First, check if the assistant exists
+    const container = document.getElementById('canvas-ai-assistant');
+    
+    if (container) {
+        console.log('Assistant container found, current display:', container.style.display);
+        
+        // Determine if it's currently hidden
+        const isHidden = container.style.display === 'none';
+        console.log('Is assistant currently hidden?', isHidden);
+        
+        // Toggle visibility
+        container.style.display = isHidden ? 'block' : 'none';
+        
+        // If we're showing the container, also remove any restore button
+        if (isHidden) {
+            console.log('Showing assistant and removing restore button if it exists');
+            const restoreButton = document.getElementById('canvas-ai-assistant-restore');
+            if (restoreButton) {
+                restoreButton.remove();
+            }
+            
+            // Reset closed state flag
+            if (window.canvasAssistantState && window.canvasAssistantState.interfaceSettings) {
+                window.canvasAssistantState.interfaceSettings.isClosed = false;
+                
+                // If it was minimized before being hidden, make sure it stays minimized
+                if (window.canvasAssistantState.interfaceSettings.isMinimized) {
+                    const contentArea = document.querySelector('.ai-content-scrollable');
+                    const footerArea = document.querySelector('.ai-assistant-container > div:last-child');
+                    const minimizeBtn = document.getElementById('ai-minimize-btn');
+                    
+                    if (contentArea) contentArea.style.display = 'none';
+                    if (footerArea) footerArea.style.display = 'none';
+                    if (minimizeBtn) {
+                        minimizeBtn.textContent = '+';
+                        minimizeBtn.title = 'Expand';
+                    }
+                    
+                    container.classList.add('minimized');
+                }
+            }
+        } else {
+            console.log('Hiding assistant');
+        }
+        
+        return !isHidden; // Return the new state (true = visible, false = hidden)
+    } else {
+        // If the container doesn't exist, we need to recreate it
+        console.log('🔍 Assistant container not found, attempting to recreate...');
+        
+        try {
+            // Create a temporary "loading" indicator while we regenerate the interface
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.id = 'canvas-ai-assistant-loading';
+            loadingIndicator.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: white;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+            loadingIndicator.innerHTML = '⏳ Recreating Canvas Assistant...';
+            document.body.appendChild(loadingIndicator);
+            
+            // Try to recreate the interface
+            performEnhancedComprehensiveExtraction().then(() => {
+                // Remove the loading indicator once we're done
+                loadingIndicator.remove();
+            }).catch(error => {
+                console.error('Error recreating interface:', error);
+                loadingIndicator.innerHTML = '❌ Error recreating assistant. Try refreshing the page.';
+                setTimeout(() => {
+                    loadingIndicator.remove();
+                }, 3000);
+            });
+            
+            return true; // We're attempting to show it
+        } catch (error) {
+            console.error('Failed to recreate interface:', error);
+            return false;
+        }
+    }
+}
+
+// First, let's add a function to your content-script.js file that will be called after creating the interface
+function setupMinimizeAndCloseButtons() {
+    console.log('Setting up minimize and close buttons for actual UI...');
+    
+    // Get all buttons in the assistant header (should include minimize and close)
+    const assistantHeader = document.querySelector('.Canvas-ai-assistant .ai-header-draggable, .canvas-ai-assistant-container .ai-assistant-header');
+    
+    if (!assistantHeader) {
+        console.error('Could not find assistant header to attach minimize/close functionality');
+        return;
+    }
+    
+    // Find the minimize button by its position (first button in header) or its text content
+    const allHeaderButtons = assistantHeader.querySelectorAll('button');
+    let minimizeButton = null;
+    
+    // Try to find the minimize button based on different possible characteristics
+    for (const button of allHeaderButtons) {
+        // Check if it's a minimize button based on text content or title
+        if (button.textContent.includes('-') || button.title.includes('Minimize') || 
+            button.classList.contains('minimize') || button.id.includes('minimize')) {
+            minimizeButton = button;
+            break;
+        }
+    }
+    
+    // If we couldn't identify it by characteristics, take the first button (usually minimize)
+    if (!minimizeButton && allHeaderButtons.length > 0) {
+        minimizeButton = allHeaderButtons[0];
+    }
+    
+    if (!minimizeButton) {
+        console.error('Could not find minimize button');
+        return;
+    }
+    
+    console.log('Found minimize button:', minimizeButton);
+    
+    // Add our own click handler to the minimize button
+    minimizeButton.addEventListener('click', function(event) {
+        // Prevent default to ensure our handler takes precedence
+        event.preventDefault();
+        event.stopPropagation();
+        
+        console.log('Minimize button clicked');
+        
+        // Get the main assistant container
+        const assistantContainer = document.getElementById('canvas-ai-assistant') || 
+                                  document.querySelector('.canvas-ai-assistant-container') ||
+                                  minimizeButton.closest('.canvas-ai-assistant-container, #canvas-ai-assistant');
+        
+        if (!assistantContainer) {
+            console.error('Could not find assistant container');
+            return;
+        }
+        
+        // Toggle minimized state
+        const isCurrentlyMinimized = assistantContainer.classList.contains('minimized');
+        
+        console.log('Current minimize state:', isCurrentlyMinimized ? 'minimized' : 'expanded');
+        
+        if (isCurrentlyMinimized) {
+            // Expand
+            assistantContainer.classList.remove('minimized');
+            
+            // Find the content area and footer
+            const contentArea = assistantContainer.querySelector('.ai-content-scrollable') || 
+                                assistantContainer.querySelector('.assignment-tabs') ||
+                                assistantContainer.querySelector('.ai-assistant-content');
+                                
+            const footer = assistantContainer.querySelector('.ai-assistant-footer') ||
+                          assistantContainer.lastElementChild;
+            
+            // Show content and footer
+            if (contentArea) contentArea.style.display = 'block';
+            if (footer && footer !== assistantHeader) footer.style.display = 'block';
+            
+            // Update button text/appearance
+            minimizeButton.textContent = '-';
+            if (minimizeButton.title) minimizeButton.title = 'Minimize';
+            
+            // Update state if available
+            if (window.canvasAssistantState && window.canvasAssistantState.interfaceSettings) {
+                window.canvasAssistantState.interfaceSettings.isMinimized = false;
+            }
+        } else {
+            // Minimize
+            assistantContainer.classList.add('minimized');
+            
+            // Find the content area and footer
+            const contentArea = assistantContainer.querySelector('.ai-content-scrollable') || 
+                                assistantContainer.querySelector('.assignment-tabs') ||
+                                assistantContainer.querySelector('.ai-assistant-content');
+                                
+            const footer = assistantContainer.querySelector('.ai-assistant-footer') ||
+                          assistantContainer.lastElementChild;
+            
+            // Hide content and footer
+            if (contentArea) contentArea.style.display = 'none';
+            if (footer && footer !== assistantHeader) footer.style.display = 'none';
+            
+            // Update button text/appearance
+            minimizeButton.textContent = '+';
+            if (minimizeButton.title) minimizeButton.title = 'Expand';
+            
+            // Update state if available
+            if (window.canvasAssistantState && window.canvasAssistantState.interfaceSettings) {
+                window.canvasAssistantState.interfaceSettings.isMinimized = true;
+            }
+        }
+        
+        console.log('Minimize state updated to:', !isCurrentlyMinimized ? 'minimized' : 'expanded');
+    });
+    
+    console.log('Minimize button handler attached successfully');
 }
 
 // Utility functions (unchanged from previous version)
