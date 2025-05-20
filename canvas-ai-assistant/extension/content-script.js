@@ -115,6 +115,85 @@ function handleMessage(message, sender, sendResponse) {
     return true;
 }
 
+function organizeAssignmentsByActualStatus(items) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    const thisWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextWeek = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+    
+    const categories = {
+        actuallyOverdue: [],     // Past due AND no submission
+        submittedLate: [],       // Past due BUT has submission (late)
+        submittedOnTime: [],     // Has submission, submitted on time
+        dueToday: [],           // Due today, no submission yet
+        dueTomorrow: [],        // Due tomorrow, no submission yet
+        dueThisWeek: [],        // Due this week, no submission yet
+        dueNextWeek: [],        // Due next week
+        dueLater: [],           // Due later
+        noDueDate: []           // No due date specified
+    };
+    
+    items.forEach(item => {
+        // Handle items without due dates
+        if (!item.dueDate) {
+            categories.noDueDate.push(item);
+            return;
+        }
+        
+        const dueDate = new Date(item.dueDate);
+        
+        // Check submission status first
+        switch (item.submissionStatus) {
+            case 'submitted_on_time':
+                categories.submittedOnTime.push(item);
+                return;
+                
+            case 'submitted_late':
+                categories.submittedLate.push(item);
+                return;
+                
+            case 'overdue':
+                categories.actuallyOverdue.push(item);
+                return;
+        }
+        
+        // For items without submission status or pending status, categorize by due date
+        if (dueDate < today) {
+            // Past due but no submission info - assume actually overdue
+            categories.actuallyOverdue.push(item);
+        } else if (dueDate < tomorrow) {
+            categories.dueToday.push(item);
+        } else if (dueDate < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)) {
+            categories.dueTomorrow.push(item);
+        } else if (dueDate < thisWeek) {
+            categories.dueThisWeek.push(item);
+        } else if (dueDate < nextWeek) {
+            categories.dueNextWeek.push(item);
+        } else {
+            categories.dueLater.push(item);
+        }
+    });
+    
+    // Sort each category appropriately
+    Object.keys(categories).forEach(key => {
+        if (key !== 'noDueDate') {
+            categories[key].sort((a, b) => {
+                const dateA = new Date(a.dueDate);
+                const dateB = new Date(b.dueDate);
+                
+                // First sort by date, then by points
+                if (dateA !== dateB) {
+                    return dateA - dateB;
+                }
+                return (b.pointsPossible || 0) - (a.pointsPossible || 0);
+            });
+        }
+    });
+    
+    return categories;
+}
+
 // Enhanced comprehensive extraction with submission tracking
 async function performEnhancedComprehensiveExtraction() {
     console.log('🎯 Starting enhanced comprehensive Canvas data extraction...');
@@ -285,6 +364,13 @@ async function extractCourseAssignmentsWithSubmissions(course) {
 
 // NEW: Determine accurate submission status
 function determineSubmissionStatus(assignment, submission) {
+    // FIRST, check if assignment has been graded (any score, even zero)
+    if (submission && submission.score !== null && submission.score !== undefined) {
+        // Consider ANY graded assignment as "done"
+        return 'submitted_on_time';
+    }
+    
+    // Then proceed with existing logic
     if (!assignment.due_at) {
         return 'no_due_date';
     }
@@ -410,8 +496,14 @@ async function extractCourseQuizzesWithSubmissions(course) {
     }
 }
 
-// NEW: Determine quiz submission status
 function determineQuizSubmissionStatus(quiz, submission) {
+    // FIRST, check if quiz has been graded at all (score present, even if zero)
+    if (submission && submission.score !== null && submission.score !== undefined) {
+        // Consider ANY graded quiz as "done" regardless of score
+        return 'submitted_on_time';
+    }
+    
+    // Then proceed with existing logic for ungraded quizzes
     if (!quiz.due_at) {
         return 'no_due_date';
     }
@@ -437,7 +529,6 @@ function determineQuizSubmissionStatus(quiz, submission) {
     }
 }
 
-// ENHANCED: Categorize assignments by ACTUAL status (not just due date)
 function categorizeAssignmentsByActualStatus() {
     console.log('📊 Categorizing assignments by actual submission status...');
     window.canvasAssistantState.extractionProgress.stage = 'analyzing-with-submissions';
@@ -450,6 +541,16 @@ function categorizeAssignmentsByActualStatus() {
     
     // Organize by ACTUAL status, not just due date
     const organized = organizeAssignmentsByActualStatus(allItems);
+    
+    // Additional sorting after organization
+    if (organized.actuallyOverdue && organized.actuallyOverdue.length > 0) {
+        // Sort overdue items with most recently due first
+        organized.actuallyOverdue.sort((a, b) => {
+            const dateA = new Date(a.dueDate);
+            const dateB = new Date(b.dueDate);
+            return dateB - dateA; // Reverse chronological
+        });
+    }
     
     // Store enhanced analysis results
     window.canvasAssistantState.assignmentAnalysis = {
@@ -468,86 +569,6 @@ function categorizeAssignmentsByActualStatus() {
     };
     
     console.log('✅ Enhanced analysis complete:', window.canvasAssistantState.assignmentAnalysis.stats);
-}
-
-// ENHANCED: Organize assignments by ACTUAL submission status
-function organizeAssignmentsByActualStatus(items) {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-    const thisWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const nextWeek = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
-    
-    const categories = {
-        actuallyOverdue: [],     // Past due AND no submission
-        submittedLate: [],       // Past due BUT has submission (late)
-        submittedOnTime: [],     // Has submission, submitted on time
-        dueToday: [],           // Due today, no submission yet
-        dueTomorrow: [],        // Due tomorrow, no submission yet
-        dueThisWeek: [],        // Due this week, no submission yet
-        dueNextWeek: [],        // Due next week
-        dueLater: [],           // Due later
-        noDueDate: []           // No due date specified
-    };
-    
-    items.forEach(item => {
-        // Handle items without due dates
-        if (!item.dueDate) {
-            categories.noDueDate.push(item);
-            return;
-        }
-        
-        const dueDate = new Date(item.dueDate);
-        
-        // Check submission status first
-        switch (item.submissionStatus) {
-            case 'submitted_on_time':
-                categories.submittedOnTime.push(item);
-                return;
-                
-            case 'submitted_late':
-                categories.submittedLate.push(item);
-                return;
-                
-            case 'overdue':
-                categories.actuallyOverdue.push(item);
-                return;
-        }
-        
-        // For items without submission status or pending status, categorize by due date
-        if (dueDate < today) {
-            // Past due but no submission info - assume actually overdue
-            categories.actuallyOverdue.push(item);
-        } else if (dueDate < tomorrow) {
-            categories.dueToday.push(item);
-        } else if (dueDate < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)) {
-            categories.dueTomorrow.push(item);
-        } else if (dueDate < thisWeek) {
-            categories.dueThisWeek.push(item);
-        } else if (dueDate < nextWeek) {
-            categories.dueNextWeek.push(item);
-        } else {
-            categories.dueLater.push(item);
-        }
-    });
-    
-    // Sort each category appropriately
-    Object.keys(categories).forEach(key => {
-        if (key !== 'noDueDate') {
-            categories[key].sort((a, b) => {
-                const dateA = new Date(a.dueDate);
-                const dateB = new Date(b.dueDate);
-                
-                // First sort by date, then by points
-                if (dateA !== dateB) {
-                    return dateA - dateB;
-                }
-                return (b.pointsPossible || 0) - (a.pointsPossible || 0);
-            });
-        }
-    });
-    
-    return categories;
 }
 
 // ENHANCED: Create improved interface with better positioning and scrolling
@@ -789,116 +810,122 @@ function buildImprovedInterfaceHTML() {
    `;
 }
 
-// NEW: Generate improved urgent tab that distinguishes between actually overdue and submitted late
 function generateImprovedUrgentTabHTML(organized) {
-   if (!organized) return '<div style="text-align: center; color: #666; padding: 20px;">Loading urgent items...</div>';
-   
-   const actuallyOverdue = organized.actuallyOverdue || [];
-   const dueToday = organized.dueToday || [];
-   const dueTomorrow = organized.dueTomorrow || [];
-   const submittedLate = organized.submittedLate || [];
-   
-   const allUrgentItems = [...actuallyOverdue, ...dueToday, ...dueTomorrow];
-   
-   if (allUrgentItems.length === 0 && submittedLate.length === 0) {
-       return `
-           <div style="text-align: center; padding: 30px; color: #666;">
-               <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
-               <div style="font-weight: 600; color: #10b981; margin-bottom: 8px;">No urgent assignments!</div>
-               <div style="font-size: 13px;">You're all caught up on immediate deadlines.</div>
-           </div>
-       `;
-   }
-   
-   let html = '';
-   
-   // Actually Overdue Section
-   if (actuallyOverdue.length > 0) {
-       html += `
-           <div style="margin-bottom: 20px;">
-               <h4 style="
-                   margin: 0 0 12px 0; 
-                   color: #dc2626; 
-                   font-size: 14px; 
-                   font-weight: 600;
-                   padding: 8px 12px;
-                   background: #fef2f2;
-                   border-radius: 6px;
-                   border-left: 4px solid #dc2626;
-               ">
-                   🚨 Actually Overdue (${actuallyOverdue.length})
-               </h4>
-               ${actuallyOverdue.map(item => generateImprovedAssignmentItemHTML(item, 'actually-overdue')).join('')}
-           </div>
-       `;
-   }
-   
-   // Due Today Section
-   if (dueToday.length > 0) {
-       html += `
-           <div style="margin-bottom: 20px;">
-               <h4 style="
-                   margin: 0 0 12px 0; 
-                   color: #d97706; 
-                   font-size: 14px; 
-                   font-weight: 600;
-                   padding: 8px 12px;
-                   background: #fffbeb;
-                   border-radius: 6px;
-                   border-left: 4px solid #d97706;
-               ">
-                   🔥 Due Today (${dueToday.length})
-               </h4>
-               ${dueToday.map(item => generateImprovedAssignmentItemHTML(item, 'due-today')).join('')}
-           </div>
-       `;
-   }
-   
-   // Due Tomorrow Section
-   if (dueTomorrow.length > 0) {
-       html += `
-           <div style="margin-bottom: 20px;">
-               <h4 style="
-                   margin: 0 0 12px 0; 
-                   color: #d97706; 
-                   font-size: 14px; 
-                   font-weight: 600;
-                   padding: 8px 12px;
-                   background: #fffbeb;
-                   border-radius: 6px;
-                   border-left: 4px solid #d97706;
-               ">
-                   ⏰ Due Tomorrow (${dueTomorrow.length})
-               </h4>
-               ${dueTomorrow.map(item => generateImprovedAssignmentItemHTML(item, 'due-tomorrow')).join('')}
-           </div>
-       `;
-   }
-   
-   // Submitted Late Section (for awareness)
-   if (submittedLate.length > 0) {
-       html += `
-           <div style="margin-bottom: 20px;">
-               <h4 style="
-                   margin: 0 0 12px 0; 
-                   color: #7c2d12; 
-                   font-size: 14px; 
-                   font-weight: 600;
-                   padding: 8px 12px;
-                   background: #fff7ed;
-                   border-radius: 6px;
-                   border-left: 4px solid #ea580c;
-               ">
-                   ⚠️ Submitted Late (${submittedLate.length})
-               </h4>
-               ${submittedLate.map(item => generateImprovedAssignmentItemHTML(item, 'submitted-late')).join('')}
-           </div>
-       `;
-   }
-   
-   return html;
+    if (!organized) return '<div style="text-align: center; color: #666; padding: 20px;">Loading urgent items...</div>';
+    
+    const actuallyOverdue = organized.actuallyOverdue || [];
+    const dueToday = organized.dueToday || [];
+    const dueTomorrow = organized.dueTomorrow || [];
+    const submittedLate = organized.submittedLate || [];
+    
+    // REVERSE the sort for overdue items - most recently overdue should be first
+    actuallyOverdue.sort((a, b) => {
+        const dateA = new Date(a.dueDate);
+        const dateB = new Date(b.dueDate);
+        // This puts most recently overdue (closest to today) at the top
+        return dateB - dateA;
+    });
+    
+    const allUrgentItems = [...actuallyOverdue, ...dueToday, ...dueTomorrow];
+    
+    if (allUrgentItems.length === 0 && submittedLate.length === 0) {
+        return `
+            <div style="text-align: center; padding: 30px; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+                <div style="font-weight: 600; color: #10b981; margin-bottom: 8px;">No urgent assignments!</div>
+                <div style="font-size: 13px;">You're all caught up on immediate deadlines.</div>
+            </div>
+        `;
+    }
+    
+    let html = '';
+    
+    // Actually Overdue Section
+    if (actuallyOverdue.length > 0) {
+        html += `
+            <div style="margin-bottom: 20px;">
+                <h4 style="
+                    margin: 0 0 12px 0; 
+                    color: #dc2626; 
+                    font-size: 14px; 
+                    font-weight: 600;
+                    padding: 8px 12px;
+                    background: #fef2f2;
+                    border-radius: 6px;
+                    border-left: 4px solid #dc2626;
+                ">
+                    🚨 Actually Overdue (${actuallyOverdue.length})
+                </h4>
+                ${actuallyOverdue.map(item => generateImprovedAssignmentItemHTML(item, 'actually-overdue')).join('')}
+            </div>
+        `;
+    }
+    
+    // Due Today Section
+    if (dueToday.length > 0) {
+        html += `
+            <div style="margin-bottom: 20px;">
+                <h4 style="
+                    margin: 0 0 12px 0; 
+                    color: #d97706; 
+                    font-size: 14px; 
+                    font-weight: 600;
+                    padding: 8px 12px;
+                    background: #fffbeb;
+                    border-radius: 6px;
+                    border-left: 4px solid #d97706;
+                ">
+                    🔥 Due Today (${dueToday.length})
+                </h4>
+                ${dueToday.map(item => generateImprovedAssignmentItemHTML(item, 'due-today')).join('')}
+            </div>
+        `;
+    }
+    
+    // Due Tomorrow Section
+    if (dueTomorrow.length > 0) {
+        html += `
+            <div style="margin-bottom: 20px;">
+                <h4 style="
+                    margin: 0 0 12px 0; 
+                    color: #d97706; 
+                    font-size: 14px; 
+                    font-weight: 600;
+                    padding: 8px 12px;
+                    background: #fffbeb;
+                    border-radius: 6px;
+                    border-left: 4px solid #d97706;
+                ">
+                    ⏰ Due Tomorrow (${dueTomorrow.length})
+                </h4>
+                ${dueTomorrow.map(item => generateImprovedAssignmentItemHTML(item, 'due-tomorrow')).join('')}
+            </div>
+        `;
+    }
+    
+    // Submitted Late Section (for awareness)
+    if (submittedLate.length > 0) {
+        html += `
+            <div style="margin-bottom: 20px;">
+                <h4 style="
+                    margin: 0 0 12px 0; 
+                    color: #7c2d12; 
+                    font-size: 14px; 
+                    font-weight: 600;
+                    padding: 8px 12px;
+                    background: #fff7ed;
+                    border-radius: 6px;
+                    border-left: 4px solid #ea580c;
+                ">
+                    ⚠️ Submitted Late (${submittedLate.length})
+                </h4>
+                ${submittedLate.map(item => generateImprovedAssignmentItemHTML(item, 'submitted-late')).join('')}
+            </div>
+        `;
+    }
+    
+    return html;
 }
-
 // NEW: Generate submitted assignments tab
 function generateSubmittedTabHTML(organized) {
    if (!organized) return '<div style="text-align: center; color: #666; padding: 20px;">Loading submitted items...</div>';
@@ -1247,80 +1274,176 @@ function makeInterfaceDraggable(container) {
    }
 }
 
-// NEW: Set up improved event listeners
 function setupImprovedEventListeners() {
-   // Minimize button
-   const minimizeBtn = document.getElementById('ai-minimize-btn');
-   const contentArea = document.querySelector('.ai-content-scrollable');
-   
-   if (minimizeBtn && contentArea) {
-       minimizeBtn.addEventListener('click', () => {
-           const isMinimized = contentArea.style.display === 'none';
-           contentArea.style.display = isMinimized ? 'flex' : 'none';
-           minimizeBtn.textContent = isMinimized ? '−' : '+';
-           minimizeBtn.title = isMinimized ? 'Minimize' : 'Expand';
-       });
-   }
-   
-   // Close button
-   const closeBtn = document.getElementById('ai-close-btn');
-   if (closeBtn) {
-       closeBtn.addEventListener('click', () => {
-           const container = document.getElementById('canvas-ai-assistant');
-           if (container) {
-               container.style.display = 'none';
-           }
-       });
-   }
-   
-   // Tab switching
-   document.querySelectorAll('.assignment-tab-button-v2').forEach(button => {
-       button.addEventListener('click', () => {
-           // Update active tab button
-           document.querySelectorAll('.assignment-tab-button-v2').forEach(btn => {
-               btn.classList.remove('active');
-               btn.style.color = '#666';
-               btn.style.borderBottomColor = 'transparent';
-           });
-           
-           button.classList.add('active');
-           button.style.color = '#2563eb';
-           button.style.borderBottomColor = '#2563eb';
-           
-           // Show corresponding tab content
-           document.querySelectorAll('.assignment-tab-content-v2').forEach(content => {
-               content.style.display = 'none';
-           });
-           
-           const tabContent = document.getElementById(`${button.dataset.tab}-tab-v2`);
-           if (tabContent) {
-               tabContent.style.display = 'block';
-           }
-       });
-   });
-   
-   // Refresh assignments
-   const refreshButton = document.getElementById('refresh-assignments-v2');
-   if (refreshButton) {
-       refreshButton.addEventListener('click', () => {
-           console.log('🔄 Enhanced refresh requested');
-           refreshButton.innerHTML = '⏳ Refreshing...';
-           refreshButton.disabled = true;
-           
-           performEnhancedComprehensiveExtraction().then(() => {
-               refreshButton.innerHTML = '🔄 Refresh';
-               refreshButton.disabled = false;
-           });
-       });
-   }
-   
-   // Export assignments
-   const exportButton = document.getElementById('export-assignments-v2');
-   if (exportButton) {
-       exportButton.addEventListener('click', () => {
-           exportEnhancedAssignmentData();
-       });
-   }
+    // Minimize button
+    const minimizeBtn = document.getElementById('ai-minimize-btn');
+    const contentArea = document.querySelector('.ai-content-scrollable');
+    
+    if (minimizeBtn && contentArea) {
+        minimizeBtn.addEventListener('click', () => {
+            const isMinimized = contentArea.style.display === 'none';
+            
+            if (isMinimized) {
+                // Expanding
+                contentArea.style.display = 'flex';
+                minimizeBtn.textContent = '−';
+                minimizeBtn.title = 'Minimize';
+                
+                // Reset layout of tab navigation
+                const tabNav = document.querySelector('.ai-content-scrollable > div:first-child');
+                if (tabNav) {
+                    tabNav.style.display = 'flex';
+                    tabNav.style.position = 'sticky';
+                    tabNav.style.top = '0';
+                    tabNav.style.zIndex = '1';
+                }
+                
+                // Reset layout of tab panels
+                document.querySelectorAll('.assignment-tab-content-v2').forEach(panel => {
+                    if (panel.id.includes('urgent') && panel.classList.contains('active')) {
+                        panel.style.display = 'block';
+                    }
+                });
+                
+                // Force a layout recalculation
+                setTimeout(() => {
+                    // Trigger reflow
+                    contentArea.style.display = 'none';
+                    // Force browser to recalculate layout
+                    void contentArea.offsetHeight;
+                    contentArea.style.display = 'flex';
+                    
+                    // Re-establish which tab is active
+                    const activeTab = document.querySelector('.assignment-tab-button-v2.active');
+                    if (activeTab) {
+                        const tabId = activeTab.dataset.tab;
+                        const tabContent = document.getElementById(`${tabId}-tab-v2`);
+                        if (tabContent) {
+                            tabContent.style.display = 'block';
+                        }
+                    }
+                }, 10);
+            } else {
+                // Minimizing
+                contentArea.style.display = 'none';
+                minimizeBtn.textContent = '+';
+                minimizeBtn.title = 'Expand';
+            }
+        });
+    }
+    
+    // Close button
+    const closeBtn = document.getElementById('ai-close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            const container = document.getElementById('canvas-ai-assistant');
+            if (container) {
+                // Hide instead of removing, so we can show it again
+                container.style.display = 'none';
+                
+                // Create a floating "restore" button that stays visible
+                createRestoreButton();
+            }
+        });
+    }
+    
+    // Tab switching
+    document.querySelectorAll('.assignment-tab-button-v2').forEach(button => {
+        button.addEventListener('click', () => {
+            // Update active tab button
+            document.querySelectorAll('.assignment-tab-button-v2').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.color = '#666';
+                btn.style.borderBottomColor = 'transparent';
+            });
+            
+            button.classList.add('active');
+            button.style.color = '#2563eb';
+            button.style.borderBottomColor = '#2563eb';
+            
+            // Show corresponding tab content
+            document.querySelectorAll('.assignment-tab-content-v2').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            const tabContent = document.getElementById(`${button.dataset.tab}-tab-v2`);
+            if (tabContent) {
+                tabContent.style.display = 'block';
+            }
+        });
+    });
+
+    // Refresh assignments
+    const refreshButton = document.getElementById('refresh-assignments-v2');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', () => {
+            console.log('🔄 Enhanced refresh requested');
+            refreshButton.innerHTML = '⏳ Refreshing...';
+            refreshButton.disabled = true;
+            
+            performEnhancedComprehensiveExtraction().then(() => {
+                refreshButton.innerHTML = '🔄 Refresh';
+                refreshButton.disabled = false;
+            });
+        });
+    }
+    
+    // Export assignments
+    const exportButton = document.getElementById('export-assignments-v2');
+    if (exportButton) {
+        exportButton.addEventListener('click', () => {
+            exportEnhancedAssignmentData();
+        });
+    }
+}
+
+function createRestoreButton() {
+    // Remove any existing restore button
+    const existingButton = document.getElementById('canvas-ai-assistant-restore');
+    if (existingButton) {
+        existingButton.remove();
+    }
+    
+    // Create a small floating button to restore the assistant
+    const restoreButton = document.createElement('div');
+    restoreButton.id = 'canvas-ai-assistant-restore';
+    restoreButton.innerHTML = '🤖';
+    restoreButton.title = 'Restore Canvas AI Assistant';
+    
+    // Style the button
+    restoreButton.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        background: #2D3B45;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 9999;
+        font-size: 20px;
+    `;
+    
+    // Add click event to restore the assistant
+    restoreButton.addEventListener('click', () => {
+        const container = document.getElementById('canvas-ai-assistant');
+        if (container) {
+            container.style.display = 'block';
+            restoreButton.remove();
+        } else {
+            // If assistant can't be found, refresh data
+            performEnhancedComprehensiveExtraction();
+            restoreButton.remove();
+        }
+    });
+    
+    // Add to the page
+    document.body.appendChild(restoreButton);
 }
 
 // NEW: Export enhanced assignment data with submission status

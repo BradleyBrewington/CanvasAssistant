@@ -55,22 +55,60 @@ class AssistantPopup {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             
-            // Try to communicate with the content script
-            const response = await chrome.tabs.sendMessage(tab.id, { action: 'ping' });
-            
-            const statusElement = document.getElementById('assistant-status');
-            if (response && response.status === 'active') {
-                statusElement.textContent = '✅ Running';
-                statusElement.className = 'status-indicator active';
-            } else {
-                statusElement.textContent = '❌ Not Active';
-                statusElement.className = 'status-indicator inactive';
+            // Try to communicate with the content script - with better error handling
+            try {
+                const response = await chrome.tabs.sendMessage(tab.id, { action: 'ping' });
+                
+                const statusElement = document.getElementById('assistant-status');
+                if (response && (response.status === 'active' || response.data?.status === 'active')) {
+                    statusElement.textContent = '✅ Running';
+                    statusElement.className = 'status-indicator active';
+                } else {
+                    statusElement.textContent = '❌ Not Active';
+                    statusElement.className = 'status-indicator inactive';
+                }
+            } catch (error) {
+                console.log("Communication error:", error);
+                document.getElementById('assistant-status').textContent = '❌ Not Active';
+                document.getElementById('assistant-status').className = 'status-indicator inactive';
             }
             
         } catch (error) {
-            // Content script probably not injected or not responding
+            console.error('Error checking assistant status:', error);
             document.getElementById('assistant-status').textContent = '❌ Not Active';
             document.getElementById('assistant-status').className = 'status-indicator inactive';
+        }
+    }
+    
+    async refreshData() {
+        const button = document.getElementById('refresh-data');
+        const originalText = button.innerHTML;
+        
+        try {
+            button.innerHTML = '<span class="button-icon">⏳</span>Refreshing...';
+            button.disabled = true;
+            
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            try {
+                await chrome.tabs.sendMessage(tab.id, { action: 'refresh-data' });
+                
+                // Refresh status after a moment
+                setTimeout(() => {
+                    this.checkAssistantStatus();
+                    this.loadStatusInfo();
+                }, 1000);
+            } catch (error) {
+                console.error("Error sending refresh message:", error);
+                alert('Could not refresh data. The extension may need to be reloaded.');
+            }
+            
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            alert('Could not refresh data. Make sure you\'re on a Canvas page and the assistant is active.');
+        } finally {
+            button.innerHTML = originalText;
+            button.disabled = false;
         }
     }
     

@@ -452,3 +452,81 @@
 .ai-assistant-content::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* ADD these new CSS rules to your styles.css file */
+
+/* Fix for layout issues after minimize/maximize */
+.ai-content-scrollable {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    max-height: calc(80vh - 140px) !important;
+}
+
+/* Ensure tab navigation maintains correct layout */
+.ai-content-scrollable > div:first-child {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1 !important;
+    background: white !important;
+    border-bottom: 2px solid #f0f0f0 !important;
+}
+
+/* Ensure active tab is always visible */
+.assignment-tab-button-v2.active {
+    color: #2563eb !important;
+    border-bottom-color: #2563eb !important;
+}
+
+/* Force tab content to maintain correct display */
+.assignment-tab-content-v2.active {
+    display: block !important;
+}
+
+/* Prevent animation during minimize/maximize to avoid layout shifts */
+#canvas-ai-assistant {
+    transition: none !important;
+}
+/* Fix for layout issues after minimize/maximize */
+.ai-content-scrollable {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    max-height: calc(80vh - 140px) !important;
+}
+
+/* Ensure tab navigation maintains correct layout */
+.ai-content-scrollable > div:first-child {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1 !important;
+    background: white !important;
+    border-bottom: 2px solid #f0f0f0 !important;
+}
+
+/* Ensure active tab is always visible */
+.assignment-tab-button-v2.active {
+    color: #2563eb !important;
+    border-bottom-color: #2563eb !important;
+}
+
+/* Force tab content to maintain correct display */
+.assignment-tab-content-v2.active {
+    display: block !important;
+}
+
+/* Prevent animation during minimize/maximize to avoid layout shifts */
+#canvas-ai-assistant {
+    transition: none !important;
+}
+
+/* Style for restore button */
+#canvas-ai-assistant-restore {
+    transition: transform 0.2s ease;
+}
+
+#canvas-ai-assistant-restore:hover {
+    transform: scale(1.1);
+}
